@@ -1,0 +1,1200 @@
+"use strict";
+
+// GTMS FRONTEND DEMO
+// Sample data is stored in this JavaScript file.
+
+const tournaments = [
+  {
+    id: 1,
+    name: "Valorant Champions Cup",
+    game: "Valorant",
+    prize: 25000,
+    slots: 64,
+    registered: 42,
+    date: "2026-11-15",
+    status: "Open",
+    description: "A competitive Valorant tournament for teams ready to prove their skills."
+  },
+  {
+    id: 2,
+    name: "BGMI Campus Showdown",
+    game: "BGMI",
+    prize: 15000,
+    slots: 100,
+    registered: 72,
+    date: "2026-11-20",
+    status: "Open",
+    description: "Drop into the battleground and compete for the campus championship."
+  },
+  {
+    id: 3,
+    name: "Free Fire Elite League",
+    game: "Free Fire",
+    prize: 10000,
+    slots: 48,
+    registered: 48,
+    date: "2026-11-25",
+    status: "Full",
+    description: "A fast-paced competition for players looking to reach the top."
+  },
+  {
+    id: 4,
+    name: "Counter-Strike Tactical Cup",
+    game: "Counter-Strike 2",
+    prize: 20000,
+    slots: 32,
+    registered: 18,
+    date: "2026-12-01",
+    status: "Open",
+    description: "Precision, teamwork, and strategy decide who wins this tactical cup."
+  },
+  {
+    id: 5,
+    name: "Valorant Rising Stars",
+    game: "Valorant",
+    prize: 8000,
+    slots: 32,
+    registered: 10,
+    date: "2026-12-08",
+    status: "Upcoming",
+    description: "An opportunity for emerging teams to compete and make a name."
+  },
+  {
+    id: 6,
+    name: "BGMI Winter Arena",
+    game: "BGMI",
+    prize: 12000,
+    slots: 64,
+    registered: 21,
+    date: "2026-12-15",
+    status: "Open",
+    description: "Join the winter arena and compete for rewards and bragging rights."
+  }
+];
+
+const matches = [
+  {
+    date: "NOV 15",
+    game: "Valorant",
+    title: "Valorant Champions Cup",
+    teams: "Team Alpha vs Team Nova",
+    time: "5:00 PM"
+  },
+  {
+    date: "NOV 20",
+    game: "BGMI",
+    title: "BGMI Campus Showdown",
+    teams: "Team Phoenix vs Team Elite",
+    time: "6:30 PM"
+  },
+  {
+    date: "NOV 25",
+    game: "Free Fire",
+    title: "Free Fire Elite League",
+    teams: "Team Blaze vs Team Storm",
+    time: "4:00 PM"
+  }
+];
+
+const leaderboard = [
+  { name: "ShadowX", game: "Valorant", wins: 28, points: 2450 },
+  { name: "Phantom", game: "BGMI", wins: 24, points: 2210 },
+  { name: "NovaAce", game: "Counter-Strike 2", wins: 21, points: 1980 },
+  { name: "BlazeYT", game: "Free Fire", wins: 19, points: 1840 },
+  { name: "Viper", game: "Valorant", wins: 17, points: 1690 }
+];
+
+// Browser-session demo state.
+let registrations = [];
+let adminMode = false;
+let nextTournamentId = 7;
+let toastTimer;
+
+// Format Indian Rupees.
+function formatMoney(amount) {
+  return "₹" + Number(amount).toLocaleString("en-IN");
+}
+
+// Format dates without changing their calendar day.
+function formatDate(dateString) {
+  const date = new Date(dateString + "T12:00:00");
+
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+// Build a local date/time from YYYY-MM-DD and an optional time.
+function makeLocalDateTime(dateString, timeString) {
+  const [year, month, day] = dateString.split("-").map(Number);
+
+  let hours = 0;
+  let minutes = 0;
+
+  if (timeString) {
+    const match = timeString.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+
+    if (match) {
+      hours = Number(match[1]) % 12;
+      minutes = Number(match[2]);
+
+      if (match[3].toUpperCase() === "PM") {
+        hours += 12;
+      }
+    }
+  }
+
+  return new Date(year, month - 1, day, hours, minutes, 0, 0);
+}
+
+function countdownTimestamp(dateString, timeString) {
+  return makeLocalDateTime(dateString, timeString).getTime();
+}
+
+// Format countdown display.
+function formatCountdown(targetTimestamp) {
+  const remaining = targetTimestamp - Date.now();
+
+  if (remaining <= 0) {
+    return {
+      text: "Scheduled time reached",
+      finished: true
+    };
+  }
+
+  const totalSeconds = Math.floor(remaining / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return {
+      text: `${days}d ${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m`,
+      finished: false
+    };
+  }
+
+  return {
+    text: `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`,
+    finished: false
+  };
+}
+
+// Update countdowns without rebuilding cards.
+function updateCountdowns() {
+  document.querySelectorAll("[data-countdown-ms]").forEach(element => {
+    const target = Number(element.dataset.countdownMs);
+
+    if (!Number.isFinite(target)) return;
+
+    const countdown = formatCountdown(target);
+
+    element.textContent = countdown.text;
+    element.classList.toggle("countdown-finished", countdown.finished);
+  });
+}
+
+// Escape user-provided text before inserting it into HTML.
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+
+function gameClass(game) {
+  return game.toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function gameSymbol(game) {
+  const symbols = {
+    "Valorant": "V",
+    "BGMI": "B",
+    "Free Fire": "F",
+    "Counter-Strike 2": "CS"
+  };
+
+  return symbols[game] || "G";
+}
+
+// Toast notification.
+function showToast(message) {
+  const toast = document.getElementById("toast");
+
+  toast.textContent = message;
+  toast.classList.remove("hidden");
+
+  clearTimeout(toastTimer);
+
+  toastTimer = setTimeout(() => {
+    toast.classList.add("hidden");
+  }, 2800);
+}
+
+// Open modal.
+function openModal(id) {
+  document.getElementById(id).classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+
+  const firstInput = document.querySelector(
+    `#${id} input:not([type="hidden"])`
+  );
+
+  if (firstInput) {
+    setTimeout(() => firstInput.focus(), 50);
+  }
+}
+
+// Close modal.
+function closeModal(id) {
+  document.getElementById(id).classList.add("hidden");
+
+  const anotherModalOpen = [
+    ...document.querySelectorAll(".modal-backdrop")
+  ].some(modal => !modal.classList.contains("hidden"));
+
+  if (!anotherModalOpen) {
+    document.body.style.overflow = "";
+  }
+}
+
+// Dashboard statistics.
+function renderStats() {
+  const active = tournaments.filter(t => t.status === "Open").length;
+
+  const players = tournaments.reduce(
+    (sum, t) => sum + t.registered,
+    0
+  );
+
+  const prize = tournaments.reduce(
+    (sum, t) => sum + t.prize,
+    0
+  );
+
+  document.getElementById("activeCount").textContent = active;
+
+  document.getElementById("playerCount").textContent =
+    players.toLocaleString("en-IN");
+
+  document.getElementById("prizeCount").textContent =
+    formatMoney(prize);
+
+  document.getElementById("matchCount").textContent = matches.length;
+
+  document.getElementById("tournamentCount").textContent =
+    tournaments.length;
+}
+
+// Render tournament cards with countdowns.
+function renderTournaments() {
+  const search = document.getElementById("searchInput")
+    .value.trim().toLowerCase();
+
+  const selectedGame = document.getElementById("gameFilter").value;
+  const selectedStatus = document.getElementById("statusFilter").value;
+  const sort = document.getElementById("sortFilter").value;
+
+  let filtered = tournaments.filter(t => {
+    const matchesSearch =
+      t.name.toLowerCase().includes(search) ||
+      t.game.toLowerCase().includes(search);
+
+    const matchesGame =
+      selectedGame === "all" || t.game === selectedGame;
+
+    const matchesStatus =
+      selectedStatus === "all" || t.status === selectedStatus;
+
+    return matchesSearch && matchesGame && matchesStatus;
+  });
+
+  if (sort === "prize") {
+    filtered.sort((a, b) => b.prize - a.prize);
+  } else if (sort === "name") {
+    filtered.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  const grid = document.getElementById("tournamentGrid");
+  const emptyState = document.getElementById("emptyState");
+
+  grid.innerHTML = filtered.map(t => {
+    const available = Math.max(0, t.slots - t.registered);
+
+    const canRegister =
+      t.status === "Open" && available > 0;
+
+    const isRegistered = registrations.some(
+      r => r.tournamentId === t.id
+    );
+
+    let buttonText = "Register →";
+
+    if (isRegistered) {
+      buttonText = "Registered ✓";
+    } else if (t.status === "Full" || available === 0) {
+      buttonText = "Tournament full";
+    } else if (t.status === "Upcoming") {
+      buttonText = "Coming soon";
+    }
+
+    return `
+      <article class="tournament-card">
+        <div class="card-art ${gameClass(t.game)}">
+          <span class="card-status ${t.status.toLowerCase()}">
+            ${escapeHTML(t.status.toUpperCase())}
+          </span>
+
+          <span class="game-symbol">
+            ${escapeHTML(gameSymbol(t.game))}
+          </span>
+
+          <span class="card-game">
+            ${escapeHTML(t.game)}
+          </span>
+        </div>
+
+        <div class="card-content">
+          <h3>${escapeHTML(t.name)}</h3>
+
+          <p class="card-description">
+            ${escapeHTML(t.description)}
+          </p>
+
+          <div class="card-facts">
+            <div class="card-fact">
+              <small>PRIZE POOL</small>
+              <strong>${formatMoney(t.prize)}</strong>
+            </div>
+
+            <div class="card-fact">
+              <small>TOURNAMENT DATE</small>
+              <strong>${formatDate(t.date)}</strong>
+            </div>
+          </div>
+
+          <div class="countdown-strip">
+            <span class="countdown-label">STARTS IN</span>
+
+            <strong
+              class="countdown-value"
+              data-countdown-ms="${countdownTimestamp(t.date)}"
+            >Calculating…</strong>
+          </div>
+
+          <div class="card-bottom">
+            <span class="slot-text">
+              <strong>${t.registered}/${t.slots}</strong> slots filled
+            </span>
+
+            <button
+              class="card-button"
+              data-tournament="${t.id}"
+              ${(!canRegister || isRegistered) ? "disabled" : ""}
+            >
+              ${buttonText}
+            </button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  emptyState.classList.toggle("hidden", filtered.length !== 0);
+
+  grid.querySelectorAll("[data-tournament]").forEach(button => {
+    button.addEventListener("click", () => {
+      openTournament(Number(button.dataset.tournament));
+    });
+  });
+}
+
+// Tournament detail and registration modal.
+function openTournament(id) {
+  const t = tournaments.find(item => item.id === id);
+
+  if (!t) return;
+
+  const available = Math.max(0, t.slots - t.registered);
+
+  const isRegistered = registrations.some(
+    r => r.tournamentId === t.id
+  );
+
+  const canRegister =
+    t.status === "Open" &&
+    available > 0 &&
+    !isRegistered;
+
+  document.getElementById("registrationTournamentId").value = t.id;
+  document.getElementById("modalGameBadge").textContent = t.game;
+  document.getElementById("modalTitle").textContent = t.name;
+  document.getElementById("modalDescription").textContent = t.description;
+
+  document.getElementById("modalInfo").innerHTML = `
+    <div class="modal-info">
+      <small>PRIZE POOL</small>
+      <strong>${formatMoney(t.prize)}</strong>
+    </div>
+
+    <div class="modal-info">
+      <small>DATE</small>
+      <strong>${formatDate(t.date)}</strong>
+    </div>
+
+    <div class="modal-info">
+      <small>STATUS</small>
+      <strong>${escapeHTML(t.status)}</strong>
+    </div>
+
+    <div class="modal-info">
+      <small>AVAILABLE SLOTS</small>
+      <strong>${available} / ${t.slots}</strong>
+    </div>
+  `;
+
+  const message = document.getElementById("registrationMessage");
+
+  message.textContent = "";
+  message.classList.remove("error");
+
+  const submit = document.getElementById("registerSubmit");
+
+  submit.disabled = !canRegister;
+
+  submit.textContent = isRegistered
+    ? "Already registered"
+    : (canRegister
+      ? "Confirm registration →"
+      : "Registration unavailable");
+
+  openModal("tournamentModal");
+}
+
+// Register a player in the frontend demo.
+document.getElementById("registrationForm").addEventListener(
+  "submit",
+  event => {
+    event.preventDefault();
+
+    const id = Number(
+      document.getElementById("registrationTournamentId").value
+    );
+
+    const tournament = tournaments.find(t => t.id === id);
+
+    const playerName = document.getElementById("playerName")
+      .value.trim();
+
+    const teamName = document.getElementById("teamName")
+      .value.trim();
+
+    const message = document.getElementById("registrationMessage");
+
+    if (!tournament || !playerName) return;
+
+    if (registrations.some(r => r.tournamentId === id)) {
+      message.textContent =
+        "You have already registered for this tournament.";
+
+      message.classList.add("error");
+      return;
+    }
+
+    if (
+      tournament.status !== "Open" ||
+      tournament.registered >= tournament.slots
+    ) {
+      message.textContent =
+        "Registration is currently unavailable.";
+
+      message.classList.add("error");
+      return;
+    }
+
+    registrations.push({
+      tournamentId: id,
+      playerName,
+      teamName: teamName || "Solo player",
+      registeredAt: new Date().toISOString()
+    });
+
+    tournament.registered += 1;
+
+    renderAll();
+    closeModal("tournamentModal");
+
+    document.getElementById("registrationForm").reset();
+
+    showToast(`Successfully registered for ${tournament.name}!`);
+
+    // Future backend integration:
+    // POST /api/tournaments/:id/register
+  }
+);
+// Match schedule with countdowns.
+function renderMatches() {
+  document.getElementById("matchList").innerHTML = matches.map(match => {
+    const parts = match.date.split(" ");
+
+    const linkedTournament = tournaments.find(
+      t => t.name === match.title
+    );
+
+    // Use the linked tournament's exact date when available.
+    let matchDate = linkedTournament ? linkedTournament.date : "";
+
+    // Resolve dates such as NOV 15 when there is no linked tournament.
+    if (!matchDate) {
+      const monthNames = [
+        "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+        "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+      ];
+
+      const monthIndex = monthNames.indexOf(
+        (parts[0] || "").toUpperCase()
+      );
+
+      const day = Number(parts[1]);
+      const now = new Date();
+
+      let year = now.getFullYear();
+
+      if (monthIndex >= 0 && day) {
+        let candidate = new Date(year, monthIndex, day);
+
+        if (candidate.getTime() < now.getTime()) {
+          year += 1;
+          candidate = new Date(year, monthIndex, day);
+        }
+
+        matchDate =
+          `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      }
+    }
+
+    const targetTimestamp = matchDate
+      ? countdownTimestamp(matchDate, match.time)
+      : NaN;
+
+    return `
+      <div class="match-row">
+        <div class="match-date">
+          ${escapeHTML(parts[0] || "")}
+          <small>${escapeHTML(parts[1] || "")}</small>
+        </div>
+
+        <div class="match-details">
+          <strong>${escapeHTML(match.title)}</strong>
+          <small>${escapeHTML(match.teams)}</small>
+
+          <span
+            class="match-countdown"
+            data-countdown-ms="${targetTimestamp}"
+          >Calculating countdown…</span>
+        </div>
+
+        <div class="match-time">
+          ${escapeHTML(match.time)}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// Player leaderboard.
+function renderLeaderboard() {
+  document.getElementById("leaderboardList").innerHTML =
+    leaderboard.map((player, index) => `
+      <div class="leaderboard-row">
+        <div class="player-cell">
+          <span class="player-rank">#${index + 1}</span>
+
+          <span class="player-avatar">
+            ${escapeHTML(player.name.charAt(0))}
+          </span>
+
+          <span>
+            <span class="player-name">
+              ${escapeHTML(player.name)}
+            </span>
+
+            <span class="player-game">
+              ${escapeHTML(player.game)}
+            </span>
+          </span>
+        </div>
+
+        <span class="player-wins">${player.wins}</span>
+
+        <span class="player-points">
+          ${player.points.toLocaleString("en-IN")}
+        </span>
+      </div>
+    `).join("");
+}
+
+// Player registrations.
+function renderRegistrations() {
+  const container = document.getElementById("registrationsList");
+
+  if (registrations.length === 0) {
+    container.innerHTML = `
+      <div class="no-registrations">
+        You haven't registered for any tournaments yet.
+        Browse the tournaments above to get started.
+      </div>
+    `;
+
+    return;
+  }
+
+  container.innerHTML = registrations.map(registration => {
+    const tournament = tournaments.find(
+      t => t.id === registration.tournamentId
+    );
+
+    if (!tournament) return "";
+
+    return `
+      <div class="registration-row">
+        <div>
+          <strong>${escapeHTML(tournament.name)}</strong>
+
+          <small>
+            ${escapeHTML(registration.playerName)}
+            ·
+            ${escapeHTML(registration.teamName)}
+          </small>
+        </div>
+
+        <span class="registration-tag">Registered ✓</span>
+      </div>
+    `;
+  }).join("");
+}
+
+// Refresh all existing sections.
+function renderAll() {
+  renderStats();
+  renderTournaments();
+  renderMatches();
+  renderLeaderboard();
+  renderRegistrations();
+}
+
+// Search, filters, and sorting.
+["searchInput", "gameFilter", "statusFilter", "sortFilter"].forEach(id => {
+  const element = document.getElementById(id);
+
+  element.addEventListener(
+    id === "searchInput" ? "input" : "change",
+    renderTournaments
+  );
+});
+
+// Reset all filters.
+document.getElementById("resetFilters").addEventListener("click", () => {
+  document.getElementById("searchInput").value = "";
+  document.getElementById("gameFilter").value = "all";
+  document.getElementById("statusFilter").value = "all";
+  document.getElementById("sortFilter").value = "default";
+
+  renderTournaments();
+});
+
+// Scroll to tournaments.
+function scrollToTournaments() {
+  document.getElementById("tournaments").scrollIntoView({
+    behavior: "smooth"
+  });
+}
+
+document.getElementById("browseButton").addEventListener(
+  "click",
+  scrollToTournaments
+);
+
+document.getElementById("viewAllButton").addEventListener(
+  "click",
+  scrollToTournaments
+);
+
+document.getElementById("featuredButton").addEventListener("click", () => {
+  const firstOpen = tournaments.find(t => t.status === "Open");
+
+  if (firstOpen) {
+    openTournament(firstOpen.id);
+  }
+});
+
+// Admin mode: frontend demonstration only, not real authentication.
+document.getElementById("adminToggle").addEventListener("click", () => {
+  adminMode = !adminMode;
+
+  const indicator = document.getElementById("adminIndicator");
+
+  indicator.textContent = adminMode ? "ON" : "OFF";
+  indicator.classList.toggle("enabled", adminMode);
+
+  if (adminMode) {
+    document.getElementById("newDate").value = "2026-12-20";
+
+    document.getElementById("adminMessage").textContent = "";
+
+    document.getElementById("adminMessage")
+      .classList.remove("error");
+
+    openModal("adminModal");
+  } else {
+    closeModal("adminModal");
+    showToast("Admin demo mode disabled.");
+  }
+});
+
+// Create a tournament in local JavaScript memory.
+document.getElementById("adminForm").addEventListener(
+  "submit",
+  event => {
+    event.preventDefault();
+
+    if (!adminMode) return;
+
+    const name = document.getElementById("newTournamentName")
+      .value.trim();
+
+    const game = document.getElementById("newGame").value;
+    const prize = Number(document.getElementById("newPrize").value);
+    const slots = Number(document.getElementById("newSlots").value);
+    const date = document.getElementById("newDate").value;
+    const status = document.getElementById("newStatus").value;
+
+    const message = document.getElementById("adminMessage");
+
+    if (
+      !name ||
+      !date ||
+      !Number.isFinite(prize) ||
+      prize < 0 ||
+      !Number.isInteger(slots) ||
+      slots < 2
+    ) {
+      message.textContent = "Please enter valid tournament details.";
+      message.classList.add("error");
+      return;
+    }
+
+    tournaments.push({
+      id: nextTournamentId++,
+      name,
+      game,
+      prize,
+      slots,
+      registered: 0,
+      date,
+      status,
+      description:
+        `Join ${name}, compete in ${game}, and challenge other players.`
+    });
+
+    renderAll();
+
+    closeModal("adminModal");
+
+    document.getElementById("adminForm").reset();
+
+    showToast("Tournament added to the demo dashboard.");
+  }
+);
+
+// Modal close buttons.
+document.querySelectorAll("[data-close]").forEach(button => {
+  button.addEventListener("click", () => {
+    closeModal(button.dataset.close);
+  });
+});
+
+// Close a modal when clicking its backdrop.
+document.querySelectorAll(".modal-backdrop").forEach(backdrop => {
+  backdrop.addEventListener("click", event => {
+    if (event.target === backdrop) {
+      closeModal(backdrop.id);
+    }
+  });
+});
+
+// Close open modals using Escape.
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    document.querySelectorAll(".modal-backdrop").forEach(modal => {
+      if (!modal.classList.contains("hidden")) {
+        closeModal(modal.id);
+      }
+    });
+  }
+});
+
+// Sidebar navigation and active section.
+document.querySelectorAll(".nav-link[data-section]").forEach(link => {
+  link.addEventListener("click", event => {
+    event.preventDefault();
+
+    const sectionId = link.dataset.section;
+    const target = document.getElementById(sectionId);
+
+    if (!target) return;
+
+    document.querySelectorAll(".nav-link[data-section]").forEach(item => {
+      item.classList.remove("active");
+    });
+
+    link.classList.add("active");
+
+    document.getElementById("pageName").textContent =
+      link.textContent.trim().replace(/\s+OFF$|\s+ON$/, "");
+
+    target.scrollIntoView({
+      behavior: "smooth"
+    });
+  });
+});
+
+// Current date and footer year.
+document.getElementById("currentDate").textContent =
+  new Date().toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+
+document.getElementById("footerYear").textContent =
+  new Date().getFullYear();
+  // =========================================
+// START THE GTMS APPLICATION
+// =========================================
+
+renderAll();
+
+// Immediately display countdowns.
+updateCountdowns();
+
+// Update countdowns every second without rebuilding cards.
+setInterval(updateCountdowns, 1000);
+
+
+// =========================================
+// GTMS 3D TOURNAMENT CARD TILT
+// =========================================
+
+(() => {
+  const grid = document.getElementById("tournamentGrid");
+
+  // Only activate on devices with a mouse or precise pointer.
+  if (
+    !grid ||
+    !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+  ) {
+    return;
+  }
+
+  // Respect reduced-motion accessibility settings.
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
+  }
+
+  // Mouse movement creates a 3D tilt.
+  grid.addEventListener("pointermove", event => {
+    const card = event.target.closest(".tournament-card");
+
+    if (!card || event.pointerType === "touch") return;
+
+    const rect = card.getBoundingClientRect();
+
+    const x = (event.clientX - rect.left) / rect.width;
+    const y = (event.clientY - rect.top) / rect.height;
+
+    const rotateY = (x - 0.5) * 10;
+    const rotateX = (0.5 - y) * 8;
+
+    card.style.setProperty(
+      "--tilt-x",
+      `${rotateX.toFixed(2)}deg`
+    );
+
+    card.style.setProperty(
+      "--tilt-y",
+      `${rotateY.toFixed(2)}deg`
+    );
+
+    card.classList.add("is-tilting");
+  });
+
+  // Reset all cards when the pointer leaves the grid.
+  grid.addEventListener("pointerleave", () => {
+    grid.querySelectorAll(".tournament-card.is-tilting").forEach(card => {
+      card.classList.remove("is-tilting");
+
+      card.style.removeProperty("--tilt-x");
+      card.style.removeProperty("--tilt-y");
+    });
+  });
+
+  // Reset the previous card when moving to another card.
+  grid.addEventListener("pointerout", event => {
+    const card = event.target.closest(".tournament-card");
+
+    const nextCard =
+      event.relatedTarget && event.relatedTarget.closest
+        ? event.relatedTarget.closest(".tournament-card")
+        : null;
+
+    if (card && card !== nextCard) {
+      card.classList.remove("is-tilting");
+
+      card.style.removeProperty("--tilt-x");
+      card.style.removeProperty("--tilt-y");
+    }
+  });
+})();
+
+
+// =========================================
+// GTMS ANIMATED ESPORTS CURSOR ENGINE
+// =========================================
+
+(() => {
+  const finePointer = window.matchMedia(
+    "(hover: hover) and (pointer: fine)"
+  );
+
+  // Leave normal cursors enabled on touch devices.
+  if (!finePointer.matches) return;
+
+  const core = document.querySelector(".cursor-core");
+  const ringOne = document.querySelector(".cursor-ring-one");
+  const ringTwo = document.querySelector(".cursor-ring-two");
+  const glow = document.querySelector(".cursor-glow");
+
+  const particles = [
+    document.querySelector(".particle-one"),
+    document.querySelector(".particle-two"),
+    document.querySelector(".particle-three")
+  ];
+
+  // Stop safely if the cursor elements are missing from index.html.
+  if (!core || !ringOne || !ringTwo || !glow) return;
+
+  let mouseX = -100;
+  let mouseY = -100;
+
+  let glowX = -100;
+  let glowY = -100;
+
+  let cursorVisible = false;
+
+  // Track mouse position.
+  document.addEventListener("mousemove", event => {
+    mouseX = event.clientX;
+    mouseY = event.clientY;
+
+    if (!cursorVisible) {
+      cursorVisible = true;
+
+      glowX = mouseX;
+      glowY = mouseY;
+
+      document.body.classList.add("cursor-ready");
+    }
+  });
+
+  // Hide the custom cursor when leaving the browser window.
+  document.addEventListener("mouseleave", () => {
+    cursorVisible = false;
+
+    document.body.classList.remove("cursor-ready");
+  });
+
+  // Restore cursor visibility when entering the document.
+  document.addEventListener("mouseenter", () => {
+    if (mouseX >= 0 && mouseY >= 0) {
+      cursorVisible = true;
+
+      document.body.classList.add("cursor-ready");
+    }
+  });
+
+  // Position a cursor element.
+  function positionElement(element, x, y) {
+    element.style.left = `${x}px`;
+    element.style.top = `${y}px`;
+  }
+
+  // Animate the cursor and its neon trail.
+  function animateCursor() {
+    if (cursorVisible) {
+      // Main cursor and geometric rings follow the pointer.
+      positionElement(core, mouseX, mouseY);
+      positionElement(ringOne, mouseX, mouseY);
+      positionElement(ringTwo, mouseX, mouseY);
+
+      // Smooth neon glow follows with a slight delay.
+      glowX += (mouseX - glowX) * 0.13;
+      glowY += (mouseY - glowY) * 0.13;
+
+      positionElement(glow, glowX, glowY);
+
+      // Orbiting particles.
+      const time = performance.now() * 0.001;
+
+      particles.forEach((particle, index) => {
+        if (!particle) return;
+
+        const radius = 24 + index * 7;
+        const speed = 1.5 + index * 0.4;
+
+        const angle =
+          time * speed + (index * Math.PI * 2) / 3;
+
+        const x = mouseX + Math.cos(angle) * radius;
+        const y = mouseY + Math.sin(angle) * radius;
+
+        positionElement(particle, x, y);
+      });
+    }
+
+    requestAnimationFrame(animateCursor);
+  }
+
+  animateCursor();
+
+  // Enlarge the cursor over interactive elements.
+  const interactiveSelector = [
+    "button",
+    "a",
+    "input",
+    "select",
+    ".tournament-card",
+    ".stat-card",
+    ".panel"
+  ].join(", ");
+
+  document.addEventListener("mouseover", event => {
+    if (event.target.closest(interactiveSelector)) {
+      document.body.classList.add("cursor-hover");
+    }
+  });
+
+  document.addEventListener("mouseout", event => {
+    if (!event.target.closest(interactiveSelector)) return;
+
+    const nextTarget = event.relatedTarget;
+
+    if (
+      !nextTarget ||
+      !nextTarget.closest ||
+      !nextTarget.closest(interactiveSelector)
+    ) {
+      document.body.classList.remove("cursor-hover");
+    }
+  });
+
+  // Small reaction when clicking.
+  document.addEventListener("mousedown", () => {
+    document.body.classList.add("cursor-click");
+  });
+
+  document.addEventListener("mouseup", () => {
+    document.body.classList.remove("cursor-click");
+  });
+
+  // Prevent the pressed state from remaining stuck if the
+  // mouse button is released outside the document.
+  window.addEventListener("blur", () => {
+    document.body.classList.remove("cursor-click");
+  });
+})();
+
+
+/* ==========================================
+   SAME CURSOR-FOLLOWING TILT AS TOURNAMENTS
+   ========================================== */
+
+(() => {
+  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+    return;
+  }
+
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
+  }
+
+  const sections = [
+    ["#matchList", ".match-row"],
+    ["#leaderboardList", ".leaderboard-row"],
+    ["#registrationsList", ".registration-row"]
+  ];
+
+  sections.forEach(([containerSelector, itemSelector]) => {
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+
+    container.addEventListener("pointermove", event => {
+      if (event.pointerType === "touch") return;
+
+      const item = event.target.closest(itemSelector);
+      if (!item || !container.contains(item)) return;
+
+      // Reset the previous item when moving to another one.
+      container.querySelectorAll(itemSelector + ".is-tilting")
+        .forEach(previous => {
+          if (previous !== item) resetTilt(previous);
+        });
+
+      const rect = item.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      const x = (event.clientX - rect.left) / rect.width;
+      const y = (event.clientY - rect.top) / rect.height;
+
+      // Same angle calculation as the tournament cards.
+      const rotateY = (x - 0.5) * 10;
+      const rotateX = (0.5 - y) * 8;
+
+      item.style.setProperty("--tilt-x", `${rotateX}deg`);
+      item.style.setProperty("--tilt-y", `${rotateY}deg`);
+      item.classList.add("is-tilting");
+    });
+
+    container.addEventListener("pointerout", event => {
+      const item = event.target.closest(itemSelector);
+      if (!item) return;
+
+      // Keep the tilt while moving between children of the same item.
+      if (event.relatedTarget && item.contains(event.relatedTarget)) {
+        return;
+      }
+
+      resetTilt(item);
+    });
+
+    container.addEventListener("pointerleave", () => {
+      container.querySelectorAll(itemSelector + ".is-tilting")
+        .forEach(resetTilt);
+    });
+  });
+
+  function resetTilt(item) {
+    item.classList.remove("is-tilting");
+    item.style.removeProperty("--tilt-x");
+    item.style.removeProperty("--tilt-y");
+  }
+})();

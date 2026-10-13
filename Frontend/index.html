@@ -1,0 +1,329 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTMS | Gaming Tournament Management</title>
+  <meta name="description" content="Discover gaming tournaments, register your team, track matches and explore player rankings.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="GTMS home">
+        <span class="brand-icon">G</span>
+        <span>GTMS<span class="brand-dot">.</span><small>ESPORTS HUB</small></span>
+      </a>
+
+      <div class="side-label">WORKSPACE</div>
+      <nav class="navigation">
+        <a href="#dashboard" class="nav-link active" data-section="dashboard">
+          <span>▦</span> Dashboard
+        </a>
+        <a href="#tournaments" class="nav-link" data-section="tournaments">
+          <span>♜</span> Tournaments
+        </a>
+        <a href="#matches" class="nav-link" data-section="matches">
+          <span>◷</span> Match Schedule
+        </a>
+        <a href="#leaderboard" class="nav-link" data-section="leaderboard">
+          <span>♛</span> Leaderboard
+        </a>
+      </nav>
+
+      <div class="side-label second-label">MANAGEMENT</div>
+      <nav class="navigation">
+        <a href="#my-registrations" class="nav-link" data-section="my-registrations">
+          <span>▤</span> My Registrations
+        </a>
+        <button class="nav-link nav-button" id="adminToggle">
+          <span>⚙</span> Admin Mode
+          <span class="admin-indicator" id="adminIndicator">OFF</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="online-status"><span class="status-dot"></span> Demo environment</div>
+        <div class="profile">
+          <div class="avatar">P</div>
+          <div class="profile-info">
+            <strong>Player One</strong>
+            <small>Esports member</small>
+          </div>
+          <span class="profile-menu">•••</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content" id="dashboard">
+      <header class="topbar">
+        <div class="breadcrumb">Workspace <span>/</span> <strong id="pageName">Dashboard</strong></div>
+        <div class="top-actions">
+          <span class="live-pill"><span></span> DEMO LIVE</span>
+          <button class="outline-button" id="browseButton">Explore tournaments ↗</button>
+        </div>
+      </header>
+
+      <section class="welcome">
+        <div>
+          <p class="eyebrow">YOUR ESPORTS COMMAND CENTER</p>
+          <h1>Game on, <span>Player.</span></h1>
+          <p class="muted">Find your next competition. Build your squad. Own the leaderboard.</p>
+        </div>
+        <div class="welcome-date">
+          <span class="date-icon">◷</span>
+          <div><strong id="currentDate">Loading date...</strong><small>YOUR GAMING OVERVIEW</small></div>
+        </div>
+      </section>
+
+      <section class="stats-grid" aria-label="Tournament statistics">
+        <article class="stat-card">
+          <div class="stat-top"><span>Active Tournaments</span><span class="stat-icon purple">♜</span></div>
+          <div class="stat-number" id="activeCount">0</div>
+          <div class="stat-caption"><span class="accent-purple">●</span> Open for competition</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-top"><span>Registered Players</span><span class="stat-icon blue">♟</span></div>
+          <div class="stat-number" id="playerCount">0</div>
+          <div class="stat-caption">Across demo tournaments</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-top"><span>Total Prize Pool</span><span class="stat-icon yellow">◇</span></div>
+          <div class="stat-number" id="prizeCount">₹0</div>
+          <div class="stat-caption">Combined listed prizes</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-top"><span>Upcoming Matches</span><span class="stat-icon green">◷</span></div>
+          <div class="stat-number" id="matchCount">0</div>
+          <div class="stat-caption">Scheduled match fixtures</div>
+        </article>
+      </section>
+
+      <section class="featured" aria-label="Featured tournament">
+        <div class="featured-copy">
+          <span class="featured-tag"><span></span> FEATURED TOURNAMENT</span>
+          <h2>Enter the<br><span>Battle Arena.</span></h2>
+          <p>Compete with the best, rise through the ranks, and make your team legendary.</p>
+          <button class="primary-button" id="featuredButton">Explore tournament <span>→</span></button>
+          <div class="featured-meta">
+            <span>⌁ Competitive gaming</span>
+            <span>♛ Exclusive rewards</span>
+          </div>
+        </div>
+        <div class="featured-art" aria-hidden="true">
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="art-core">G<span>T</span></div>
+          <div class="art-label">NEXT LEVEL<br><strong>STARTS HERE</strong></div>
+          <div class="art-spark spark-one">✦</div>
+          <div class="art-spark spark-two">✧</div>
+        </div>
+      </section>
+
+      <section class="section-block" id="tournaments">
+        <div class="section-heading">
+          <div><p class="eyebrow">FIND YOUR NEXT CHALLENGE</p><h2>Tournaments <span class="heading-count" id="tournamentCount">0</span></h2></div>
+          <button class="text-button" id="viewAllButton">View all tournaments →</button>
+        </div>
+
+        <div class="filters">
+          <label class="search-box">
+            <span>⌕</span>
+            <input type="search" id="searchInput" placeholder="Search tournaments or games..." aria-label="Search tournaments">
+          </label>
+          <select id="gameFilter" aria-label="Filter by game">
+            <option value="all">All games</option>
+            <option value="Valorant">Valorant</option>
+            <option value="BGMI">BGMI</option>
+            <option value="Free Fire">Free Fire</option>
+            <option value="Counter-Strike 2">Counter-Strike 2</option>
+          </select>
+          <select id="statusFilter" aria-label="Filter by status">
+            <option value="all">All statuses</option>
+            <option value="Open">Open</option>
+            <option value="Upcoming">Upcoming</option>
+            <option value="Full">Full</option>
+          </select>
+          <select id="sortFilter" aria-label="Sort tournaments">
+            <option value="default">Sort: Featured</option>
+            <option value="prize">Highest prize</option>
+            <option value="name">Name A–Z</option>
+          </select>
+        </div>
+
+        <div class="tournament-grid" id="tournamentGrid"></div>
+        <div class="empty-state hidden" id="emptyState">
+          <div>⌕</div><h3>No tournaments found</h3><p>Try a different search or change your filters.</p>
+          <button class="outline-button" id="resetFilters">Reset filters</button>
+        </div>
+      </section>
+
+      <div class="lower-grid">
+        <section class="panel" id="matches">
+          <div class="section-heading compact">
+            <div><p class="eyebrow">WHAT'S COMING UP</p><h2>Match Schedule</h2></div>
+            <span class="panel-icon">◷</span>
+          </div>
+          <div id="matchList" class="match-list"></div>
+          <p class="small-note">Sample fixtures for demonstration purposes.</p>
+        </section>
+
+        <section class="panel" id="leaderboard">
+          <div class="section-heading compact">
+            <div><p class="eyebrow">THE BEST OF THE BEST</p><h2>Top Players</h2></div>
+            <span class="panel-icon">♛</span>
+          </div>
+          <div class="leaderboard-head"><span>PLAYER</span><span>WINS</span><span>POINTS</span></div>
+          <div id="leaderboardList"></div>
+          <p class="small-note">Demo ranking data.</p>
+        </section>
+      </div>
+
+      <section class="panel registrations-panel" id="my-registrations">
+        <div class="section-heading compact">
+          <div><p class="eyebrow">YOUR COMPETITIVE JOURNEY</p><h2>My Registrations</h2></div>
+          <span class="panel-icon">▤</span>
+        </div>
+        <div id="registrationsList" class="registrations-list"></div>
+      </section>
+
+      <footer class="footer">
+        <div class="brand footer-brand"><span class="brand-icon">G</span><span>GTMS<span class="brand-dot">.</span></span></div>
+        <span>Gaming Tournament Management System</span>
+        <span>Frontend demo · <span id="footerYear"></span></span>
+      </footer>
+
+<!-- ======================================
+     TEAM BEHIND GTMS
+====================================== -->
+
+<section class="team-section" id="team">
+  <div class="team-heading">
+    <span class="team-eyebrow">THE PEOPLE BEHIND THE PLATFORM</span>
+    <h2>Team Behind <span>GTMS</span></h2>
+    <p>Built with teamwork, strategy, and a passion for gaming.</p>
+  </div>
+
+  <div class="team-grid">
+
+    <!-- TEAM MEMBER 1 -->
+    <article class="team-card">
+      <div class="team-avatar">01</div>
+      <span class="team-role">TEAM MEMBER</span>
+      <h3>OJAS SHARMA</h3>
+      <p class="team-id">Registration No.: 25BCE2534</p>
+      <p class="team-contribution">FRONTEND DEVELOPER</p>
+    </article>
+
+    <!-- TEAM MEMBER 2 -->
+    <article class="team-card">
+      <div class="team-avatar">02</div>
+      <span class="team-role">TEAM MEMBER</span>
+      <h3>TOSHI SINGH</h3>
+      <p class="team-id">Registration No.: 25BCE2393</p>
+      <p class="team-contribution">DATABASE DEVELOPER</p>
+    </article>
+
+    <!-- TEAM MEMBER 3 -->
+    <article class="team-card">
+      <div class="team-avatar">03</div>
+      <span class="team-role">TEAM MEMBER</span>
+      <h3>POLU KEERTHANA REDDY</h3>
+      <p class="team-id">Registration No.: 25BCE2392</p>
+      <p class="team-contribution">BACKEND DEVELOPER</p>
+    </article>
+
+  </div>
+
+  <div class="team-footer">
+    <div class="team-brand">GTMS<span>®</span></div>
+    <p>Gaming Tournament Management System</p>
+    <p class="team-copyright">
+      © <span id="copyrightYear"></span> GTMS Project Team.
+      All rights reserved.
+    </p>
+    <p class="team-legal">
+      An academic project. Product names and game trademarks belong
+      to their respective owners.
+    </p>
+  </div>
+</section>
+
+    </main>
+
+  </div>
+
+  <!-- Tournament details / registration modal -->
+  <div class="modal-backdrop hidden" id="tournamentModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <button class="modal-close" data-close="tournamentModal" aria-label="Close">×</button>
+      <p class="eyebrow">TOURNAMENT DETAILS</p>
+      <div id="modalGameBadge" class="game-badge">GAME</div>
+      <h2 id="modalTitle">Tournament</h2>
+      <p id="modalDescription" class="muted"></p>
+      <div class="modal-info-grid" id="modalInfo"></div>
+      <form id="registrationForm">
+        <input type="hidden" id="registrationTournamentId">
+        <label for="playerName">Your player name</label>
+        <input id="playerName" name="playerName" placeholder="Enter your name" maxlength="50" required>
+        <label for="teamName">Team name (optional)</label>
+        <input id="teamName" name="teamName" placeholder="Enter your team name" maxlength="50">
+        <p id="registrationMessage" class="form-message" aria-live="polite"></p>
+        <button type="submit" class="primary-button full-button" id="registerSubmit">Confirm registration →</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin add tournament modal -->
+  <div class="modal-backdrop hidden" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+    <div class="modal">
+      <button class="modal-close" data-close="adminModal" aria-label="Close">×</button>
+      <p class="eyebrow">ADMIN WORKSPACE · DEMO</p>
+      <h2 id="adminTitle">Create tournament</h2>
+      <p class="muted">Add a tournament to the local demo dashboard.</p>
+      <form id="adminForm">
+        <label for="newTournamentName">Tournament name</label>
+        <input id="newTournamentName" required maxlength="80" placeholder="e.g. Campus Championship">
+        <label for="newGame">Game</label>
+        <select id="newGame" required>
+          <option value="Valorant">Valorant</option>
+          <option value="BGMI">BGMI</option>
+          <option value="Free Fire">Free Fire</option>
+          <option value="Counter-Strike 2">Counter-Strike 2</option>
+        </select>
+        <div class="form-row">
+          <div><label for="newPrize">Prize pool (₹)</label><input type="number" id="newPrize" min="0" required value="5000"></div>
+          <div><label for="newSlots">Total slots</label><input type="number" id="newSlots" min="2" max="5000" required value="32"></div>
+        </div>
+        <label for="newDate">Tournament date</label>
+        <input type="date" id="newDate" required>
+        <label for="newStatus">Registration status</label>
+        <select id="newStatus"><option>Open</option><option>Upcoming</option><option>Full</option></select>
+        <p id="adminMessage" class="form-message" aria-live="polite"></p>
+        <button type="submit" class="primary-button full-button">Create tournament →</button>
+      </form>
+    </div>
+  </div>
+
+<!-- Custom animated esports cursor -->
+<div class="cursor-orbit cursor-ring-one" aria-hidden="true"></div>
+<div class="cursor-orbit cursor-ring-two" aria-hidden="true"></div>
+<div class="cursor-core" aria-hidden="true">
+  <span></span>
+</div>
+<div class="cursor-particle particle-one" aria-hidden="true"></div>
+<div class="cursor-particle particle-two" aria-hidden="true"></div>
+<div class="cursor-particle particle-three" aria-hidden="true"></div>
+<div class="cursor-glow" aria-hidden="true"></div>
+
+  <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+  <script src="script.js"></script>
+</body>
+</html>
